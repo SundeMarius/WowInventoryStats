@@ -1,4 +1,4 @@
-﻿namespace WowCraftingManagerClient.APIModels
+﻿namespace WowInventoryStats.APIModels
 {
     internal record class PlayerInfo
     {

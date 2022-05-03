@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+﻿using System.Net;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace WowInventoryStats.Authentication
@@ -12,24 +13,24 @@ namespace WowInventoryStats.Authentication
 
     public class TokenAuthenticator
     {
-        public OAuthToken? Token { get; private set; } = new();
-        public bool IsAuthenticated { get; protected set; } = false;
-        
-        public async Task Authenticate(string? clientID, string? clientSecret)
+        public bool IsAuthenticated { get; private set; } = false;
+
+        public async Task<OAuthToken> Authenticate(string clientID, string clientSecret)
         {
-            Token = await RequestAccessToken(clientID, clientSecret);
-            // Authetication is successful if no exceptions are thrown
+            // Authentication is successful if no exceptions are thrown
+            OAuthToken token = await RequestAccessToken(clientID, clientSecret);
             IsAuthenticated = true;
+            return token;
         }
-        private static async Task<OAuthToken?> RequestAccessToken(string? clientID, string? clientSecret)
+        private static async Task<OAuthToken> RequestAccessToken(string clientID, string clientSecret)
         {
             if (string.IsNullOrEmpty(clientSecret))
             {
-                throw new ArgumentNullException("Client Secret can not be null");
+                throw new ArgumentNullException("Client Secret can not be null or empty");
             }
             if (string.IsNullOrEmpty(clientID))
             {
-                throw new ArgumentNullException("Client ID can not be null");
+                throw new ArgumentNullException("Client ID can not be null or empty");
             }
             var client = new HttpClient();
             var query = new FormUrlEncodedContent(new Dictionary<string, string>
@@ -39,13 +40,13 @@ namespace WowInventoryStats.Authentication
                 {"client_secret", clientSecret}
             });
             var response = await client.PostAsync("https://us.battle.net/oauth/token", query);
-            if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            if (response.StatusCode == HttpStatusCode.Unauthorized)
             {
                 throw new AuthenticationException("Unauthorized");
             }
             response.EnsureSuccessStatusCode();
             var result = await response.Content.ReadAsStringAsync();
-            return JsonSerializer.Deserialize<OAuthToken>(result);
+            return JsonSerializer.Deserialize<OAuthToken>(result)!;
         }
     }
     public class AuthenticationException : Exception
