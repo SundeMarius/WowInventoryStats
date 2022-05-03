@@ -13,24 +13,25 @@ namespace WowInventoryStats.Authentication
 
     public class TokenAuthenticator
     {
-        public bool IsAuthenticated { get; private set; } = false;
+        public OAuthToken Token { get; private set; } = new();
 
-        public async Task<OAuthToken> Authenticate(string clientID, string clientSecret)
+        public bool IsAuthenticated = false;
+
+        public async Task Authenticate(string clientID, string clientSecret)
         {
             // Authentication is successful if no exceptions are thrown
-            OAuthToken token = await RequestAccessToken(clientID, clientSecret);
+            Token = await RequestAccessToken(clientID, clientSecret);
             IsAuthenticated = true;
-            return token;
         }
         private static async Task<OAuthToken> RequestAccessToken(string clientID, string clientSecret)
         {
             if (string.IsNullOrEmpty(clientSecret))
             {
-                throw new ArgumentNullException("Client Secret can not be null or empty");
+                throw new ArgumentNullException("client Secret can not be null or empty");
             }
             if (string.IsNullOrEmpty(clientID))
             {
-                throw new ArgumentNullException("Client ID can not be null or empty");
+                throw new ArgumentNullException("client ID can not be null or empty");
             }
             var client = new HttpClient();
             var query = new FormUrlEncodedContent(new Dictionary<string, string>
@@ -42,7 +43,7 @@ namespace WowInventoryStats.Authentication
             var response = await client.PostAsync("https://us.battle.net/oauth/token", query);
             if (response.StatusCode == HttpStatusCode.Unauthorized)
             {
-                throw new AuthenticationException("Unauthorized");
+                throw new AuthenticationException("invalid credentials");
             }
             response.EnsureSuccessStatusCode();
             var result = await response.Content.ReadAsStringAsync();

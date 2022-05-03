@@ -1,25 +1,34 @@
-﻿using System.Configuration;
-using WowInventoryStats.Authentication;
+﻿using WowInventoryStats.Authentication;
+using WowInventoryStats.Configuration;
 
 namespace WowInventoryStats
 {
     public class Program
     {
-        static TokenAuthenticator wowAuth = new();
+        static AppConfiguration? Config;
 
         static async Task Main()
         {
             try
             {
+                // Read application config
+                Config = new AppConfiguration("config.json");
                 // Get Access Token for Battlenet API access
-                var clientId = ConfigurationManager.AppSettings["client_id"]!;
-                var clientSecret = ConfigurationManager.AppSettings["client_secret"]!;
-                OAuthToken token = await wowAuth.Authenticate(clientId, clientSecret);
-                Console.WriteLine($"Successful token request, here it is: {token}");
+                TokenAuthenticator wowAuth = new();
+                await wowAuth.Authenticate(Config.Secret.ClientId, Config.Secret.ClientSecret);
+                Console.WriteLine($"Successful token request, here it is: {wowAuth.Token}");
+            }
+            catch (AppConfigurationException ex)
+            {
+                Console.WriteLine($"Configuration error: {ex.Message}");
             }
             catch (AuthenticationException ex)
             {
                 Console.WriteLine($"Authentication error: {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error: {ex.Message}");
             }
             // TODO: Menu
             // TODO: Game data requests
