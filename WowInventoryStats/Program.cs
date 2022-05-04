@@ -5,17 +5,15 @@ namespace WowInventoryStats
 {
     public class Program
     {
-        static AppConfiguration? Config;
-
         static async Task Main()
         {
+            AppConfiguration? AppConfig;
+            TokenAuthenticator wowAuth = new();
+            // Read application config and get access token from Blizzard
             try
             {
-                // Read application config
-                Config = new AppConfiguration("config.json");
-                // Get Access Token for Battlenet API access
-                TokenAuthenticator wowAuth = new();
-                await wowAuth.Authenticate(Config.Secret.ClientId, Config.Secret.ClientSecret);
+                AppConfig = new AppConfiguration();
+                await wowAuth.Authenticate(AppConfig.Parameters.Credentials);
                 Console.WriteLine($"Successful token request, here it is: {wowAuth.Token}");
             }
             catch (AppConfigurationException ex)

@@ -9,7 +9,7 @@ namespace WowInventoryStats
     [TestClass]
     public class TestTokenAuthenticator
     {
-        static AppConfiguration config = new("config.json");
+        static AppConfiguration config = new();
 
         [TestMethod]
         public void DefaultTokenAuthenticatorValidTest()
@@ -26,12 +26,13 @@ namespace WowInventoryStats
 
             string? client_id = null;
             string? client_secret = "12345";
-            await Assert.ThrowsExceptionAsync<ArgumentNullException>(() => wowAuth.Authenticate(client_id!, client_secret));
+            TokenCredentials credentials = new TokenCredentials(client_id, client_secret);
+            await Assert.ThrowsExceptionAsync<ArgumentNullException>(() => wowAuth.Authenticate(credentials));
             Assert.AreEqual(wowAuth.IsAuthenticated, false);
 
             client_id = "34343";
             client_secret = null;
-            await Assert.ThrowsExceptionAsync<ArgumentNullException>(() => wowAuth.Authenticate(client_id, client_secret!));
+            await Assert.ThrowsExceptionAsync<ArgumentNullException>(() => wowAuth.Authenticate(credentials));
             Assert.AreEqual(wowAuth.IsAuthenticated, false);
         }
 
@@ -41,7 +42,8 @@ namespace WowInventoryStats
             TokenAuthenticator wowAuth = new();
             var client_id = "1234545sdfsf6";
             var client_secret = "1234545sdfsf6";
-            await Assert.ThrowsExceptionAsync<AuthenticationException>(() => wowAuth.Authenticate(client_id!, client_secret));
+            TokenCredentials credentials = new TokenCredentials(client_id, client_secret);
+            await Assert.ThrowsExceptionAsync<AuthenticationException>(() => wowAuth.Authenticate(credentials));
             Assert.AreEqual(wowAuth.IsAuthenticated, false);
         }
 
@@ -50,7 +52,7 @@ namespace WowInventoryStats
         {
             TokenAuthenticator wowAuth = new();
             Assert.AreEqual(wowAuth.IsAuthenticated, false);
-            await wowAuth.Authenticate(config.Secret.ClientId, config.Secret.ClientSecret);
+            await wowAuth.Authenticate(config.Parameters.Credentials);
             Assert.AreEqual(wowAuth.IsAuthenticated, true);
         }
     }

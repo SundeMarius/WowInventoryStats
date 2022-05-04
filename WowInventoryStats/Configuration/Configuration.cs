@@ -1,27 +1,43 @@
 ﻿using System.Text.Json;
 using System.Text.Json.Serialization;
+using WowInventoryStats.Authentication;
 
 namespace WowInventoryStats.Configuration
 {
-    public record UserSecret
-    (
-        [property: JsonPropertyName("client_id")] string ClientId = "",
-        [property: JsonPropertyName("client_secret")] string ClientSecret = ""
-    );
+    public class AppParameters
+    {
+        [property: JsonPropertyName("credentials")]
+        public TokenCredentials Credentials { get; set; } = new();
+
+        [property: JsonPropertyName("logging")]
+        public bool Logging { get; set; } = false;
+    }
 
     public class AppConfiguration
     {
-        public UserSecret Secret = new();
+        public AppParameters Parameters { get; private set; }
 
-        private Dictionary<string, string> Parameters = new();
+        private static readonly string AppDataConfigFolder = "WowInventoryStats";
 
-        public AppConfiguration(string path)
+        private static readonly string AppDataConfigFileName = "WowInventoryStatsConfig.json";
+
+        public AppConfiguration()
         {
             try
             {
-                Parameters = JsonSerializer.Deserialize<Dictionary<string, string>>(File.ReadAllText(path))!;
-                string credentialsPath = Path.GetFullPath(this["credentials_path"]);
-                Secret = JsonSerializer.Deserialize<UserSecret>(File.ReadAllText(credentialsPath))!;
+                // Check if folder exists. Create one and copy over template config if not.
+                string appDataConfigFolderPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), AppDataConfigFolder);
+                string appDataConfigFilePath = Path.Combine(appDataConfigFolderPath, AppDataConfigFileName);
+                if (!Directory.Exists(appDataConfigFolderPath) || !File.Exists(appDataConfigFilePath))
+                {
+                    Directory.CreateDirectory(appDataConfigFolderPath);
+                    CreateDefaultConfig(appDataConfigFilePath);
+                    throw new Exception("please provide access token credentials");
+                }
+                else
+                {
+                    Parameters = JsonSerializer.Deserialize<AppParameters>(File.ReadAllText(appDataConfigFilePath))!;
+                }
             }
             catch (Exception ex)
             {
@@ -29,10 +45,10 @@ namespace WowInventoryStats.Configuration
             }
         }
 
-        public string this[string key]
+        private void CreateDefaultConfig(string path)
         {
-            get { return Parameters[key]; }
-            set { Parameters[key] = value; }
+            var json = JsonSerializer.Serialize(new AppParameters(), new JsonSerializerOptions { WriteIndented = true });
+            File.WriteAllText(path, json);
         }
     }
 
