@@ -15,22 +15,27 @@ namespace WowInventoryStats.Authentication
         [property: JsonPropertyName("expires_in")]
         public int ExpiresIn { get; init; } = 0;
     }
+
     public class TokenCredentials
     {
         [property: JsonPropertyName("client_id")]
-        public string? ClientId { get; set; } = "";
+        public string? ClientId { get; init; } = "";
 
         [property: JsonPropertyName("client_secret")]
-        public string? ClientSecret { get; set; } = "";
+        public string? ClientSecret { get; init; } = "";
 
+        public TokenCredentials()
+        {
+        }
         public TokenCredentials(string? clientId, string? clientSecret)
         {
             ClientId = clientId;
             ClientSecret = clientSecret;
         }
 
-        public TokenCredentials()
+        public bool Populated()
         {
+            return !string.IsNullOrEmpty(ClientId) && !string.IsNullOrEmpty(ClientSecret);
         }
     }
 
@@ -75,7 +80,13 @@ namespace WowInventoryStats.Authentication
     }
     public class AuthenticationException : Exception
     {
+        public AuthenticationException() : base()
+        {
+        }
         public AuthenticationException(string message) : base(message)
+        {
+        }
+        public AuthenticationException(string message, Exception ex) : base(message, ex)
         {
         }
     }

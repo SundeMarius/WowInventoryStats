@@ -13,6 +13,13 @@ namespace WowInventoryStats
             try
             {
                 AppConfig = new AppConfiguration();
+                while (!AppConfig.Parameters.Credentials.Populated())
+                {
+                    Console.Write("Enter client id: ");
+                    var clientId = Console.ReadLine();
+                    Console.Write("Enter client secret: ");
+                    var clientSecret = Console.ReadLine();
+                }
                 await wowAuth.Authenticate(AppConfig.Parameters.Credentials);
                 Console.WriteLine($"Successful token request, here it is: {wowAuth.Token}");
             }
@@ -26,7 +33,7 @@ namespace WowInventoryStats
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error: {ex.Message}");
+                Console.WriteLine($"Error: {ex}");
             }
             // TODO: Menu
             // TODO: Game data requests
