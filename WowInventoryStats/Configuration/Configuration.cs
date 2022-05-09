@@ -11,40 +11,29 @@ namespace WowInventoryStats.Configuration
         
         [property: JsonPropertyName("credentials")]
         public TokenCredentials Credentials { get; set; } = new();
-
-        public AppParameters()
-        {
-        }
-        public AppParameters(TokenCredentials credentials)
-        {
-            Credentials = credentials;
-        }
     }
 
     public class AppConfiguration
     {
-        public AppParameters Parameters { get; }
+        public AppParameters Parameters { get; set; }
 
-        private static readonly string AppDataConfigFolder = "WowInventoryStats";
+        private readonly string ConfigPath;
 
-        private static readonly string AppDataConfigFileName = "config.json";
-
-        public AppConfiguration()
+        public AppConfiguration(string path)
         {
+            ConfigPath = path;
             try
             {
-                // Check if folder exists. Create one and copy over template config if not.
-                string appDataConfigFolderPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), AppDataConfigFolder);
-                string appDataConfigFilePath = Path.Combine(appDataConfigFolderPath, AppDataConfigFileName);
-                if (File.Exists(appDataConfigFilePath))
+                // Check if file exists. If not, create one and copy over template config.
+                if (File.Exists(ConfigPath))
                 {
-                    Parameters = JsonSerializer.Deserialize<AppParameters>(File.ReadAllText(appDataConfigFilePath))!;
+                    Parameters = JsonSerializer.Deserialize<AppParameters>(File.ReadAllText(ConfigPath))!;
                 }
                 else
                 {
-                    Directory.CreateDirectory(appDataConfigFolderPath);
-                    CreateDefaultConfig(appDataConfigFilePath);
                     Parameters = new();
+                    Directory.CreateDirectory(Path.GetDirectoryName(ConfigPath)!);
+                    SaveConfig();
                 }
             }
             catch (Exception ex)
@@ -53,10 +42,10 @@ namespace WowInventoryStats.Configuration
             }
         }
 
-        static private void CreateDefaultConfig(string path)
+        public void SaveConfig()
         {
-            var json = JsonSerializer.Serialize(new AppParameters(), new JsonSerializerOptions { WriteIndented = true });
-            File.WriteAllText(path, json);
+            var json = JsonSerializer.Serialize(Parameters, new JsonSerializerOptions { WriteIndented = true });
+            File.WriteAllText(ConfigPath, json);
         }
     }
 

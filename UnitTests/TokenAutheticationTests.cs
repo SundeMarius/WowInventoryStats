@@ -9,7 +9,7 @@ namespace WowInventoryStats
     [TestClass]
     public class TestTokenAuthenticator
     {
-        static AppConfiguration config = new();
+        static readonly AppConfiguration config = new(Program.ConfigFilePath);
 
         [TestMethod]
         public void DefaultTokenAuthenticatorValidTest()
@@ -27,12 +27,12 @@ namespace WowInventoryStats
             string? client_id = null;
             string? client_secret = "12345";
             TokenCredentials credentials = new TokenCredentials(client_id, client_secret);
-            await Assert.ThrowsExceptionAsync<ArgumentNullException>(() => wowAuth.Authenticate(credentials));
+            await Assert.ThrowsExceptionAsync<AuthenticationException>(() => wowAuth.Authenticate(credentials));
             Assert.AreEqual(wowAuth.IsAuthenticated, false);
 
             client_id = "34343";
             client_secret = null;
-            await Assert.ThrowsExceptionAsync<ArgumentNullException>(() => wowAuth.Authenticate(credentials));
+            await Assert.ThrowsExceptionAsync<AuthenticationException>(() => wowAuth.Authenticate(credentials));
             Assert.AreEqual(wowAuth.IsAuthenticated, false);
         }
 

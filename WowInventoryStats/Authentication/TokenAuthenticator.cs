@@ -16,7 +16,7 @@ namespace WowInventoryStats.Authentication
         public int ExpiresIn { get; init; } = 0;
     }
 
-    public class TokenCredentials
+    public record TokenCredentials
     {
         [property: JsonPropertyName("client_id")]
         public string? ClientId { get; init; } = "";
@@ -26,7 +26,9 @@ namespace WowInventoryStats.Authentication
 
         public TokenCredentials()
         {
+
         }
+    
         public TokenCredentials(string? clientId, string? clientSecret)
         {
             ClientId = clientId;
@@ -47,9 +49,16 @@ namespace WowInventoryStats.Authentication
 
         public async Task Authenticate(TokenCredentials credentials)
         {
-            // Authentication is successful if no exceptions are thrown
-            Token = await RequestAccessToken(credentials);
-            IsAuthenticated = true;
+            try
+            {
+                // Authentication is successful if no exceptions are thrown
+                Token = await RequestAccessToken(credentials);
+                IsAuthenticated = true;
+            }
+            catch (Exception ex)
+            {
+                throw new AuthenticationException(ex.Message, ex.GetBaseException());
+            }
         }
         private static async Task<OAuthToken> RequestAccessToken(TokenCredentials credentials)
         {
@@ -74,8 +83,8 @@ namespace WowInventoryStats.Authentication
                 throw new AuthenticationException("invalid credentials");
             }
             response.EnsureSuccessStatusCode();
-            var result = await response.Content.ReadAsStringAsync();
-            return JsonSerializer.Deserialize<OAuthToken>(result)!;
+            var json = await response.Content.ReadAsStringAsync();
+            return JsonSerializer.Deserialize<OAuthToken>(json)!;
         }
     }
     public class AuthenticationException : Exception

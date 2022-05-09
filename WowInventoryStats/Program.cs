@@ -5,23 +5,44 @@ namespace WowInventoryStats
 {
     public class Program
     {
+        public static readonly string ConfigFolderPath = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+            "WowInventoryStats");
+
+        public static readonly string ConfigFilePath = Path.Combine(ConfigFolderPath, "config.json");
+
         static async Task Main()
         {
-            AppConfiguration? AppConfig;
+            AppConfiguration AppConfig;
             TokenAuthenticator wowAuth = new();
-            // Read application config and get access token from Blizzard
             try
             {
-                AppConfig = new AppConfiguration();
-                while (!AppConfig.Parameters.Credentials.Populated())
+                // Create application config and get access token from Blizzard
+                AppConfig = new AppConfiguration(ConfigFilePath);
+                if (!AppConfig.Parameters.Credentials.Populated())
                 {
-                    Console.Write("Enter client id: ");
-                    var clientId = Console.ReadLine();
-                    Console.Write("Enter client secret: ");
-                    var clientSecret = Console.ReadLine();
+                    string? answer = "Y";
+                    Console.WriteLine("Please provide your client ID and client secret credentials from your battle.net account.");
+                    Console.Write("Enter credentials? (Y/n): ");
+                    answer = Console.ReadLine();
+                    if (string.IsNullOrEmpty(answer) || answer.ToLower() == "y")
+                    {
+                        Console.Write("Client ID: ");
+                        var clientId = Console.ReadLine();
+                        Console.Write("Client secret: ");
+                        var clientSecret = Console.ReadLine();
+                        AppConfig.Parameters.Credentials = new TokenCredentials{ ClientId = clientId, ClientSecret = clientSecret};
+                        AppConfig.SaveConfig();
+                    }
+                    else
+                    {
+                        return;
+                    }
                 }
+                Console.WriteLine("Authenticating...");
                 await wowAuth.Authenticate(AppConfig.Parameters.Credentials);
-                Console.WriteLine($"Successful token request, here it is: {wowAuth.Token}");
+                Console.WriteLine($"Authentication successful.");
+                Console.WriteLine($"Token: {wowAuth.Token}");
             }
             catch (AppConfigurationException ex)
             {
@@ -33,7 +54,7 @@ namespace WowInventoryStats
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error: {ex}");
+                Console.WriteLine($"Error: {ex.Message}");
             }
             // TODO: Menu
             // TODO: Game data requests
