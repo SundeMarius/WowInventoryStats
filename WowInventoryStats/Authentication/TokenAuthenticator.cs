@@ -26,15 +26,12 @@ namespace WowInventoryStats.Authentication
 
         public TokenCredentials()
         {
-
-        }
-    
+        } 
         public TokenCredentials(string? clientId, string? clientSecret)
         {
             ClientId = clientId;
             ClientSecret = clientSecret;
         }
-
         public bool Populated()
         {
             return !string.IsNullOrEmpty(ClientId) && !string.IsNullOrEmpty(ClientSecret);
@@ -64,20 +61,19 @@ namespace WowInventoryStats.Authentication
         {
             if (string.IsNullOrEmpty(credentials.ClientSecret))
             {
-                throw new ArgumentNullException(nameof(credentials.ClientSecret));
+                throw new ArgumentNullException(nameof(credentials));
             }
             if (string.IsNullOrEmpty(credentials.ClientId))
             {
-                throw new ArgumentNullException(nameof(credentials.ClientId));
+                throw new ArgumentNullException(nameof(credentials));
             }
-            var client = new HttpClient();
             var query = new FormUrlEncodedContent(new Dictionary<string, string>
             {
                 {"grant_type", "client_credentials" },
                 {"client_id", credentials.ClientId},
                 {"client_secret", credentials.ClientSecret}
             });
-            var response = await client.PostAsync("https://us.battle.net/oauth/token", query);
+            var response = await new HttpClient().PostAsync("https://us.battle.net/oauth/token", query);
             if (response.StatusCode == HttpStatusCode.Unauthorized)
             {
                 throw new AuthenticationException("invalid credentials");

@@ -6,18 +6,19 @@ namespace WowInventoryStats.Configuration
 {
     public class AppParameters
     {
-        [property: JsonPropertyName("logging")]
-        public bool Logging { get; set; } = false;
-        
         [property: JsonPropertyName("credentials")]
         public TokenCredentials Credentials { get; set; } = new();
+
+        // Checks that all fields are not null
+        public bool Populated()
+        {
+            return Credentials.Populated();
+        }
     }
 
     public class AppConfiguration
     {
         public AppParameters Parameters { get; set; }
-
-        private readonly string ConfigPath;
 
         public AppConfiguration(string path)
         {
@@ -47,6 +48,13 @@ namespace WowInventoryStats.Configuration
             var json = JsonSerializer.Serialize(Parameters, new JsonSerializerOptions { WriteIndented = true });
             File.WriteAllText(ConfigPath, json);
         }
+
+        public bool Populated()
+        {
+            return Parameters.Populated();
+        }
+
+        internal readonly string ConfigPath;
     }
 
     public class AppConfigurationException : Exception

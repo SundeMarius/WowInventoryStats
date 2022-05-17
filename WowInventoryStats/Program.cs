@@ -1,64 +1,85 @@
 ﻿using WowInventoryStats.Authentication;
 using WowInventoryStats.Configuration;
+using WowInventoryStats.Logger;
 
 namespace WowInventoryStats
 {
     public class Program
     {
-        public static readonly string ConfigFolderPath = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "WowInventoryStats");
+        /*
+            Cross platform user config path
+        */
+        public static string UserConfigFilePath
+        {
+            get
+            {
+                string ConfigFolderPath = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                "WowInventoryStats");
+                return Path.Combine(ConfigFolderPath, "config.json");
+            }
+        }
 
-        public static readonly string ConfigFilePath = Path.Combine(ConfigFolderPath, "config.json");
+        private static readonly ConsoleLogger CLogger = new();
+        
+        private static AppConfiguration? AppConfig;
 
         static async Task Main()
         {
-            AppConfiguration AppConfig;
             TokenAuthenticator wowAuth = new();
             try
             {
-                // Create application config and get access token from Blizzard
-                AppConfig = new AppConfiguration(ConfigFilePath);
-                if (!AppConfig.Parameters.Credentials.Populated())
+                // Read application config
+                CLogger.Log(LogType.Trace, "Loading user configuration...");
+                AppConfig = new AppConfiguration(UserConfigFilePath);
+                if (!AppConfig.Populated())
                 {
-                    string? answer = "Y";
-                    Console.WriteLine("Please provide your client ID and client secret credentials from your battle.net account.");
-                    Console.Write("Enter credentials? (Y/n): ");
-                    answer = Console.ReadLine();
-                    if (string.IsNullOrEmpty(answer) || answer.ToLower() == "y")
+                    CLogger.Log(LogType.Warn, $"No configuration found -- creating default config at {AppConfig.ConfigPath}");
+                    AppConfig.Parameters.Credentials = CredentialsPrompt();
+                    if (!AppConfig.Populated())
                     {
-                        Console.Write("Client ID: ");
-                        var clientId = Console.ReadLine();
-                        Console.Write("Client secret: ");
-                        var clientSecret = Console.ReadLine();
-                        AppConfig.Parameters.Credentials = new TokenCredentials{ ClientId = clientId, ClientSecret = clientSecret};
-                        AppConfig.SaveConfig();
+                        CLogger.Log(LogType.Failure, "Credentials not provided, exiting...");
+                        Environment.Exit(-1);
                     }
-                    else
-                    {
-                        return;
-                    }
+                    AppConfig.SaveConfig();
                 }
-                Console.WriteLine("Authenticating...");
+                CLogger.Log(LogType.Trace, "User configuration loaded!");
+                CLogger.Log(LogType.Trace, "Authenticating...");
+                //  Get access token from Blizzard
                 await wowAuth.Authenticate(AppConfig.Parameters.Credentials);
-                Console.WriteLine($"Authentication successful.");
+                CLogger.Log(LogType.Success, "Access granted!");
+                CLogger.Log(LogType.Warn, "Here is your access token");
                 Console.WriteLine($"Token: {wowAuth.Token}");
             }
             catch (AppConfigurationException ex)
             {
-                Console.WriteLine($"Configuration error: {ex.Message}");
+                CLogger.Log(LogType.Error, $"Configuration error: {ex.Message}");
             }
             catch (AuthenticationException ex)
             {
-                Console.WriteLine($"Authentication error: {ex.Message}");
+                CLogger.Log(LogType.Error, $"Authentication error: {ex.Message}");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error: {ex.Message}");
+                CLogger.Log(LogType.Error, $"Error: {ex.Message}");
             }
-            // TODO: Menu
-            // TODO: Game data requests
-            // TODO: Game data statistics
+        }
+
+        private static TokenCredentials CredentialsPrompt()
+        {
+            Console.WriteLine("Please provide your client ID and client secret credentials from your battle.net account.");
+            Console.Write("Prompt credentials? (Y/n): ");
+            string? answer = Console.ReadLine();
+            TokenCredentials credentials = new();
+            if (string.IsNullOrEmpty(answer) || answer.ToLower() == "y")
+            {
+                Console.Write("Client ID: ");
+                var clientId = Console.ReadLine();
+                Console.Write("Client secret: ");
+                var clientSecret = Console.ReadLine();
+                credentials = new TokenCredentials(clientId, clientSecret);
+            }
+            return credentials;
         }
     }
 }
